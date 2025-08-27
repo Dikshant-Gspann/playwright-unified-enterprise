@@ -1,17 +1,37 @@
+# OS / editor
+.DS_Store
+
+# Node
 node_modules/
+
+# Playwright / reports / artifacts
 allure-results/
 allure-report/
 playwright-report/
 test-results/
-videos/
 traces/
+videos/
 output/
+
+# WDIO / mobile logs
+playwright-tests/mobile/logs/
+wdio-*.log
+
+# Build/binary artifacts (do NOT commit)
 *.zip
 *.mp4
 *.mov
 *.webm
 *.apk
+*.aab
 *.ipa
-.DS_Store
-.env
-resources
+
+# iOS .app bundles & contents
+*.app/
+resources/Wikipedia.app/**
+
+# iOS bundle internals (safety)
+**/_CodeSignature/
+**/Frameworks/
+**/PlugIns/
+**/Assets.car
