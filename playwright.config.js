@@ -10,7 +10,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [
     ['list'],
-    ['allure-playwright', { outputFolder: 'allure-results' }]
+    ['allure-playwright', { outputFolder: 'allure-results' }],
+    [require.resolve('./utils/reporter-plugin.js')] 
   ],
   use: {
     headless: true,
