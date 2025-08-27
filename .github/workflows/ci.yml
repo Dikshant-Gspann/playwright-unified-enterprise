@@ -3,6 +3,24 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: "Client name from configs/<client>.json"
+        required: true
+        default: "LondonDrugs"
+        type: string
+      testPath:
+        description: "Playwright test path or glob"
+        required: true
+        default: "playwright-tests/ui/specs/loginlogout.spec.js"
+        type: string
+      browser:
+        description: "Playwright project (chromium/firefox/webkit/all)"
+        required: true
+        default: "all"
+        type: choice
+        options: [chromium, firefox, webkit, all]
 
 jobs:
   test:
