@@ -29,8 +29,11 @@ jobs:
           key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: npm-${{ runner.os }}-
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
 
       - name: Run Playwright tests
         run: CLIENT=LondonDrugs npx playwright test playwright-tests/ui/specs/loginlogout.spec.js
