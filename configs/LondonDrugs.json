@@ -1,0 +1,32 @@
+{
+  "client": "LondonDrugs",
+  "ciCd": {
+    "azure-pipelines": true,
+    "github-actions": false,
+    "circleci": false
+  },
+  "webhooks": {
+    "slack": {
+      "url": "https://hooks.slack.com/services/AAA/BBB/CCC"
+    },
+    "teams": {
+      "url": "https://outlook.office.com/webhook/XXX/YYY/ZZZ"
+    }
+  },
+  "testManagement": {
+    "testrail": {
+      "host": "https://mycompany.testrail.io",
+      "projectId": 42,
+      "username": "qa_user"
+    }
+  },
+  "emailReporting": {
+    "enabled": true,
+    "smtp": {
+      "host": "smtp.mail.mycompany.com",
+      "port": 587,
+      "user": "ci-reports@mycompany.com",
+      "pass": "********"
+    }
+  }
+}

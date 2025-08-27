@@ -1,0 +1,19 @@
+// tsconfig.json
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": true
+  },
+  // Include every TS file in the repo
+  "include": [
+    "**/*.js"
+, "plugins/ci/github-actions.js", "plugins/ci/circleci.js", "plugins/ci/azure-pipelines.js", "utils/plugin-runner.js", "plugins/email/smtp.js", "plugins/testmgmt/testrail.js", "plugins/webhook/teams.js", "plugins/webhook/slack.js", "utils/notifier.js", "utils/loader.js", "playwright-tests/ui/specs/loginlogout.spec.js"  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
