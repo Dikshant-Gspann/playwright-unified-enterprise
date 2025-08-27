@@ -17,9 +17,9 @@ export async function setupAll() {
     const plugin = require('../plugins/webhook/slack.js');
     await plugin.setup(cfg.webhooks.slack);
   }
-  if (cfg.webhooks.teams) {
-    const plugin = require('../plugins/webhook/teams.js');
-    await plugin.setup(cfg.webhooks.teams);
+  if (cfg.webhooks?.teams?.url) {
+    console.log('[Bootstrap] Loading Teams plugin');
+    await require('../plugins/webhook/teams.js').setup(cfg.webhooks.teams);
   }
 
   // TestRail
