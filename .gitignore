@@ -1,0 +1,16 @@
+node_modules/
+allure-results/
+allure-report/
+playwright-report/
+test-results/
+videos/
+traces/
+output/
+*.zip
+*.mp4
+*.mov
+*.webm
+*.apk
+*.ipa
+.DS_Store
+.env
