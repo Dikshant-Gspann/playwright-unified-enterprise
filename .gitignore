@@ -3,7 +3,6 @@ allure-results/
 allure-report/
 playwright-report/
 test-results/
-resources/
 videos/
 traces/
 output/
@@ -15,3 +14,4 @@ output/
 *.ipa
 .DS_Store
 .env
+resources
