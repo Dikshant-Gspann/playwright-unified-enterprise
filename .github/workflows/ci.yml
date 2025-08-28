@@ -52,21 +52,21 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Teams webhook smoke ping
-        if: ${{ env.TEAMS_WEBHOOK_URL != '' }}
-        env:
-          HOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
-        run: |
-          set -e
-          echo 'Posting a smoke card to Teams...'
-          curl -sS -H "Content-Type: application/json" -d '{
-            "@type":"MessageCard",
-            "@context":"http://schema.org/extensions",
-            "summary":"Smoke",
-            "themeColor":"0076D7",
-            "sections":[{"activityTitle":"Teams webhook smoke test","text":"If you can see this, the webhook is valid."}]
-          }' "$HOOK"
-          echo 'Done.'
+      # - name: Teams webhook smoke ping
+      #   if: ${{ env.TEAMS_WEBHOOK_URL != '' }}
+      #   env:
+      #     HOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      #   run: |
+      #     set -e
+      #     echo 'Posting a smoke card to Teams...'
+      #     curl -sS -H "Content-Type: application/json" -d '{
+      #       "@type":"MessageCard",
+      #       "@context":"http://schema.org/extensions",
+      #       "summary":"Smoke",
+      #       "themeColor":"0076D7",
+      #       "sections":[{"activityTitle":"Teams webhook smoke test","text":"If you can see this, the webhook is valid."}]
+      #     }' "$HOOK"
+      #     echo 'Done.'
 
       - name: Run Playwright tests
         run: CLIENT=LondonDrugs npx playwright test playwright-tests/ui/specs/loginlogout.spec.js
