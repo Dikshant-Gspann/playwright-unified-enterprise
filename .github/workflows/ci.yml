@@ -1,6 +1,6 @@
 name: Playwright CI
-on:
 
+on:
   pull_request:
   workflow_dispatch:
     inputs:
@@ -9,10 +9,15 @@ on:
         required: true
         default: "LondonDrugs"
         type: string
-      testPath:
-        description: "Playwright test path or glob"
+      uiPath:
+        description: "UI tests path or glob"
         required: true
-        default: "playwright-tests/ui/specs/loginlogout.spec.js"
+        default: "playwright-tests/ui/specs"
+        type: string
+      apiPath:
+        description: "API tests path or glob"
+        required: true
+        default: "playwright-tests/api/specs"
         type: string
       browser:
         description: "Playwright project (chromium/firefox/webkit/all)"
@@ -26,13 +31,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CLIENT: LondonDrugs
+      CLIENT: ${{ github.event.inputs.client }}
       TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
       SMTP_HOST: ${{ secrets.SMTP_HOST }}
       SMTP_PORT: ${{ secrets.SMTP_PORT }}
       SMTP_USER: ${{ secrets.SMTP_USER }}
       SMTP_PASS: ${{ secrets.SMTP_PASS }}
-      REPORT_TO:   ${{ secrets.REPORT_TO }}
+      REPORT_TO: ${{ secrets.REPORT_TO }}
+
+      # convenience for scripts
+      UI_PATH:  ${{ github.event.inputs.uiPath }}
+      API_PATH: ${{ github.event.inputs.apiPath }}
+      BROWSER:  ${{ github.event.inputs.browser }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,26 +62,38 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # - name: Teams webhook smoke ping
-      #   if: ${{ env.TEAMS_WEBHOOK_URL != '' }}
-      #   env:
-      #     HOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
-      #   run: |
-      #     set -e
-      #     echo 'Posting a smoke card to Teams...'
-      #     curl -sS -H "Content-Type: application/json" -d '{
-      #       "@type":"MessageCard",
-      #       "@context":"http://schema.org/extensions",
-      #       "summary":"Smoke",
-      #       "themeColor":"0076D7",
-      #       "sections":[{"activityTitle":"Teams webhook smoke test","text":"If you can see this, the webhook is valid."}]
-      #     }' "$HOOK"
-      #     echo 'Done.'
+      - name: Run UI browsers (matrix-in-a-step)
+        shell: bash
+        run: |
+          set -eo pipefail
+          ui_exit=0
+          if [[ "$BROWSER" == "all" || -z "$BROWSER" ]]; then
+            for b in chromium firefox webkit; do
+              echo ">>> Running UI on $b"
+              BROWSER="$b" CLIENT="$CLIENT" npx playwright test "$UI_PATH" --project="$b" || ui_exit=$?
+            done
+          else
+            echo ">>> Running UI on $BROWSER"
+            BROWSER="$BROWSER" CLIENT="$CLIENT" npx playwright test "$UI_PATH" --project="$BROWSER" || ui_exit=$?
+          fi
+          echo "UI_EXIT=$ui_exit" >> $GITHUB_ENV
+          # don't fail the job yet; let API run and reporting generate
 
-      - name: Run Playwright tests
-        run: CLIENT=LondonDrugs npx playwright test playwright-tests/ui/specs/loginlogout.spec.js
+      - name: Run API tests
+        shell: bash
+        run: |
+          set -eo pipefail
+          api_exit=0
+          echo ">>> Running API tests (will try project=api, then plain path)"
+          CLIENT="$CLIENT" npx playwright test "$API_PATH" --project=api || api_exit=$?
+          if [[ $api_exit -ne 0 ]]; then
+            echo "project=api not found or failed; trying plain run…"
+            CLIENT="$CLIENT" npx playwright test "$API_PATH" || api_exit=$?
+          fi
+          echo "API_EXIT=$api_exit" >> $GITHUB_ENV
+          # still don't fail—generate Allure first
 
-      - name: Generate Allure HTML
+      - name: Generate Allure HTML (UI+API combined)
         if: always()
         run: npx allure generate allure-results --clean -o allure-report
 
@@ -81,3 +103,12 @@ jobs:
         with:
           name: allure-report-${{ env.CLIENT }}
           path: allure-report
+
+      - name: Fail if any test step failed
+        if: always()
+        shell: bash
+        run: |
+          echo "UI_EXIT=$UI_EXIT  API_EXIT=$API_EXIT"
+          if [[ "${UI_EXIT:-0}" -ne 0 || "${API_EXIT:-0}" -ne 0 ]]; then
+            exit 1
+          fi
