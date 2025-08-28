@@ -4,7 +4,6 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 
   globalSetup: require.resolve('./utils/bootstrap.js'),
-  testDir: 'playwright-tests',
   timeout: 60_000,
   expect: { timeout: 5_000 },
   retries: process.env.CI ? 2 : 0,
