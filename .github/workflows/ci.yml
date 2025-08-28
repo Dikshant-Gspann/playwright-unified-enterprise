@@ -5,44 +5,44 @@ on:
   workflow_dispatch:
     inputs:
       client:
-        description: "Client name from configs/<client>.json"
+        description: "Client (configs/<client>.json)"
+        type: string
         required: true
         default: "LondonDrugs"
-        type: string
-      uiPath:
-        description: "UI tests path or glob"
+      # Choose which projects to run (booleans)
+      run_api:
+        description: "Run API project"
+        type: boolean
         required: true
-        default: "playwright-tests/ui/specs"
-        type: string
-      apiPath:
-        description: "API tests path or glob"
+        default: true
+      run_chromium:
+        description: "Run Chromium UI"
+        type: boolean
         required: true
-        default: "playwright-tests/api/specs"
-        type: string
-      browser:
-        description: "Playwright project (chromium/firefox/webkit/all)"
+        default: true
+      run_firefox:
+        description: "Run Firefox UI"
+        type: boolean
         required: true
-        default: "all"
-        type: choice
-        options: [chromium, firefox, webkit, all]
+        default: true
+      run_webkit:
+        description: "Run WebKit UI"
+        type: boolean
+        required: true
+        default: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CLIENT: ${{ github.event.inputs.client }}
+      CLIENT: ${{ github.event.inputs.client || 'LondonDrugs' }}
       TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
       SMTP_HOST: ${{ secrets.SMTP_HOST }}
       SMTP_PORT: ${{ secrets.SMTP_PORT }}
       SMTP_USER: ${{ secrets.SMTP_USER }}
       SMTP_PASS: ${{ secrets.SMTP_PASS }}
       REPORT_TO: ${{ secrets.REPORT_TO }}
-
-      # convenience for scripts
-      UI_PATH:  ${{ github.event.inputs.uiPath }}
-      API_PATH: ${{ github.event.inputs.apiPath }}
-      BROWSER:  ${{ github.event.inputs.browser }}
     steps:
       - uses: actions/checkout@v4
 
@@ -62,27 +62,39 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Run UI + API in one process
+      # Build the --project flags from the manual inputs (or defaults on PR)
+      - name: Build project selection
+        id: select
         shell: bash
-        env:
-          UI_PATH:  ${{ github.event.inputs.uiPath || 'playwright-tests/ui/specs' }}
-          API_PATH: ${{ github.event.inputs.apiPath || 'playwright-tests/api/specs' }}
-          BROWSER:  ${{ github.event.inputs.browser || 'all' }}
         run: |
           set -euo pipefail
-          ARGS=""
-          if [[ "$BROWSER" == "all" || -z "$BROWSER" ]]; then
-            ARGS="$ARGS --project=chromium --project=firefox --project=webkit"
-          else
-            ARGS="$ARGS --project=$BROWSER"
+          PROJS=()
+          # On workflow_dispatch these are 'true'/'false' strings; on PR they may be empty -> default true
+          [[ "${{ github.event.inputs.run_api || 'true' }}" == 'true' ]] && PROJS+=("api")
+          [[ "${{ github.event.inputs.run_chromium || 'true' }}" == 'true' ]] && PROJS+=("chromium")
+          [[ "${{ github.event.inputs.run_firefox  || 'true' }}" == 'true' ]] && PROJS+=("firefox")
+          [[ "${{ github.event.inputs.run_webkit   || 'true' }}" == 'true' ]] && PROJS+=("webkit")
+
+          if [[ ${#PROJS[@]} -eq 0 ]]; then
+            echo "No projects selected — nothing to run."
+            echo "args=" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          # ALWAYS include api project so API tests run in the same process
-          ARGS="$ARGS --project=api"
-      
-          echo ">>> Running: npx playwright test \"$UI_PATH\" \"$API_PATH\" $ARGS"
-          CLIENT="$CLIENT" npx playwright test "$UI_PATH" "$API_PATH" $ARGS
-          
-      - name: Generate Allure HTML (UI+API combined)
+
+          ARGS=""
+          for p in "${PROJS[@]}"; do ARGS="$ARGS --project=$p"; done
+          echo "Selected projects: ${PROJS[*]}"
+          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
+
+      - name: Run Playwright (single process, selected projects)
+        if: steps.select.outputs.args != ''
+        run: |
+          CLIENT="${{ env.CLIENT }}" \
+          npx playwright test \
+            ${{ steps.select.outputs.args }} \
+            --reporter=list,allure-playwright,./utils/reporter-plugin.js
+
+      - name: Generate Allure HTML
         if: always()
         run: npx allure generate allure-results --clean -o allure-report
 
@@ -92,12 +104,3 @@ jobs:
         with:
           name: allure-report-${{ env.CLIENT }}
           path: allure-report
-
-      - name: Fail if any test step failed
-        if: always()
-        shell: bash
-        run: |
-          echo "UI_EXIT=$UI_EXIT  API_EXIT=$API_EXIT"
-          if [[ "${UI_EXIT:-0}" -ne 0 || "${API_EXIT:-0}" -ne 0 ]]; then
-            exit 1
-          fi
