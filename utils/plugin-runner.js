@@ -17,9 +17,11 @@ export async function setupAll() {
     const plugin = require('../plugins/webhook/slack.js');
     await plugin.setup(cfg.webhooks.slack);
   }
-  if (cfg.webhooks?.teams?.url) {
+  
+   // --- Teams: load if config has it OR env var is present ---
+  if ((cfg.webhooks && cfg.webhooks.teams && cfg.webhooks.teams.url) || process.env.TEAMS_WEBHOOK_URL) {
     console.log('[Bootstrap] Loading Teams plugin');
-    await require('../plugins/webhook/teams.js').setup(cfg.webhooks.teams);
+    await require('../plugins/webhook/teams.js').setup(cfg.webhooks?.teams || {});
   }
 
   // TestRail
