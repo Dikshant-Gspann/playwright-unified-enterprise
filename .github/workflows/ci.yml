@@ -59,6 +59,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Teams webhook smoke ping
+        if: ${{ env.TEAMS_WEBHOOK_URL != '' }}
+        env:
+          HOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          curl -sS -H "Content-Type: application/json" -d '{
+            "@type":"MessageCard","@context":"http://schema.org/extensions",
+            "summary":"Smoke","themeColor":"0076D7",
+            "text":"Smoke ping: if you see this, webhook + renderer are OK."
+          }' "$HOOK"
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
