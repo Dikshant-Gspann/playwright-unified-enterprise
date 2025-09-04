@@ -1,0 +1,15 @@
+{
+  "client": "WorldMarket",
+  "ciCd": {
+    "github-actions": true
+  },
+  "webhooks": {
+    "teams": {
+      "url": "${TEAMS_WEBHOOK_URL}"
+    }
+  },
+  "testManagement": {},
+  "emailReporting": {
+    "enabled": false
+  }
+}
