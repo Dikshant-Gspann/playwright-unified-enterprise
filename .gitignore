@@ -12,6 +12,7 @@ test-results/
 traces/
 videos/
 output/
+docs/framework-runbook.md
 
 # WDIO / mobile logs
 playwright-tests/mobile/logs/
@@ -25,6 +26,7 @@ wdio-*.log
 *.apk
 *.aab
 *.ipa
+*.md
 
 # iOS .app bundles & contents
 *.app/
